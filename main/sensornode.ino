@@ -216,7 +216,7 @@ void setup() {
     init_led_task();
     init_metrics();
 
-    String location = WiFiSettings.string("location", 64, "Room", "The name of the physical location this sensor node is located");
+    String location = WiFiSettings.string("location", 64, "Heizungskeller", "The name of the physical location this sensor node is located");
 #ifdef CONFIG_SENSOR_MHZ19
     co2_warning_threshold = WiFiSettings.integer("co2_warning_threshold", 1000, "The CO2 concentration at which to enter the warning state (0 to disable)");
     co2_alarm_threshold = WiFiSettings.integer("co2_alarm_threshold", 1600, "The CO2 concentration at which to enter the alarm state (0 to disable)");
@@ -237,7 +237,7 @@ void setup() {
     hostname.toLowerCase();
     WiFiSettings.hostname = hostname;
 
-    if (!WiFiSettings.connect()) ESP.restart();
+    if (!WiFiSettings.connect(true,10)) ESP.restart();
 
     prom_registry_add_global_label(prom_default_registry(), "location", location.c_str());
 

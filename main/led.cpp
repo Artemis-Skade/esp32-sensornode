@@ -1,9 +1,12 @@
 #include "led.h"
-#include <NeoPixelBus.h>
+#include "util.h"
 #include <esp_event_loop.h>
 
-const int brightness = 0xff;
 
+#ifdef CONFIG_LED_NEOPIXEL
+#include <NeoPixelBus.h>
+
+const int brightness = 0xff;
 NeoPixelBus<NeoGrbwFeature, Neo800KbpsMethod> led(1, 26);
 volatile static uint32_t led_state_bits = 0;
 
@@ -47,3 +50,31 @@ void init_led_task() {
     }, "led", 2048, NULL, tskIDLE_PRIORITY, &h);
     assert(h);
 }
+
+#else //fallback build in led
+#define LED_BUILDIN GPIO_NUM_2
+
+void set_led_state(LedState state, bool toggle) {
+    if(state == WiFiConnecting){
+        // turn on
+        gpio_set_level(LED_BUILDIN, 1);
+    } else {
+        // turn off
+        gpio_set_level(LED_BUILDIN, 0);
+    }
+}
+
+void init_led_task() {
+        // Configure pin
+    gpio_config_t io_conf;
+    io_conf.intr_type = (gpio_int_type_t)GPIO_PIN_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1ULL << LED_BUILDIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+
+    gpio_set_level(LED_BUILDIN, 0);
+}
+
+#endif
