@@ -69,6 +69,15 @@ bool sgp30_init = false;
 prom_gauge_t metric_tvoc;
 #endif
 
+#ifdef CONFIG_SOLAR_TEMPS_AND_FLOW
+#define temp_to_tank_pin GPIO_NUM_13
+#define temp_from_tank_pin GPIO_NUM_12
+#define pump_flow_pin GPIO_NUM_14
+prom_gauge_t metric_solar_to_tank;
+prom_gauge_t metric_solar_from_tank;
+prom_gauge_t metric_solar_punp_flow;
+#endif
+
 
 void init_metrics() {
     init_metrics_esp32(prom_default_registry());
@@ -196,6 +205,32 @@ void init_metrics() {
     prom_gauge_init(&metric_tvoc, tvoc_strings);
     prom_register_gauge(prom_default_registry(), &metric_tvoc);
 #endif
+#ifdef CONFIG_SOLAR_TEMPS_AND_FLOW
+    prom_strings_t solar_temp_in_strings = {
+        .name_space = NULL,
+        .subsystem = "sensors",
+        .name      = "solar_temp_in",
+        .help      = "The temperature of the water flowing to the tank.",
+    };
+    prom_gauge_init(&metric_solar_to_tank, solar_temp_in_strings);
+    prom_register_gauge(prom_default_registry(), &metric_solar_to_tank);
+    prom_strings_t solar_temp_out_strings = {
+        .name_space = NULL,
+        .subsystem = "sensors",
+        .name      = "solar_temp_out",
+        .help      = "The temperature of the water flowing from the tank.",
+    };
+    prom_gauge_init(&metric_solar_from_tank, solar_temp_out_strings);
+    prom_register_gauge(prom_default_registry(), &metric_solar_from_tank);
+    prom_strings_t solar_pump_flow_strings = {
+        .name_space = NULL,
+        .subsystem = "sensors",
+        .name      = "solar_pump_flow",
+        .help      = "The through flow of the pump.",
+    };
+    prom_gauge_init(&metric_solar_punp_flow, solar_pump_flow_strings);
+    prom_register_gauge(prom_default_registry(), &metric_solar_punp_flow);
+#endif
 }
 
 void record_sensor_error(const char *sensor, esp_err_t code) {
@@ -286,6 +321,12 @@ void setup() {
 #ifdef CONFIG_SENSOR_SGP30
     ESP_ERROR_CHECK(!sgp30.begin());
     Serial.println("sgp30: inititalized");
+#endif
+#ifdef CONFIG_SOLAR_TEMPS_AND_FLOW
+    adcAttachPin(temp_to_tank_pin);
+    adcAttachPin(temp_from_tank_pin);
+    adcAttachPin(pump_flow_pin);
+    Serial.println("solar adc pins: initialized");
 #endif
 }
 
@@ -380,6 +421,17 @@ void loop() {
         prom_gauge_set(&metric_tvoc, sgp30.TVOC);
         Serial.printf("sgp30: measurement: eco2=%d, tvoc=%d\n", sgp30.eCO2, sgp30.TVOC);
     }
+#endif
+#ifdef CONFIG_SOLAR_TEMPS_AND_FLOW
+    //get data
+    uint16_t temp_in = analogRead(temp_from_tank_pin);
+    uint16_t temp_out = analogRead(temp_from_tank_pin);
+    uint16_t pump_flow = analogRead(temp_from_tank_pin);
+    prom_gauge_set(&metric_solar_from_tank,temp_in);
+    prom_gauge_set(&metric_solar_to_tank,temp_out);
+    prom_gauge_set(&metric_solar_punp_flow,pump_flow);
+    Serial.printf("solar adc pins: measurement: Temp In=%.1f, Temp Out=%.3f, Pump Flow=%.1f",
+       temp_in,temp_out,pump_flow);
 #endif
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
