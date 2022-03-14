@@ -19,5 +19,6 @@ Peripherals and configs are selected through platformio.ini.
 ![Grafana Dashboard Example](grafana.png)
 
 ## Contributors:
-Origin: ?
-Addition: Noah Dormann
+Origin: [polyfloyd](https://github.com/polyfloyd)
+
+Addition: [Noah Dormann](https://github.com/Artemis-Skade)
